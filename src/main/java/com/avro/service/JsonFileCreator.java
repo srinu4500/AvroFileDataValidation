@@ -48,7 +48,7 @@ public class JsonFileCreator {
             System.out.println("file created successfully"+LocalTime.now());
  
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         System.out.println("Total Time Taken : "+(System.currentTimeMillis() - start)/1000 + " secs");
 	}
