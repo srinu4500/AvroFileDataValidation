@@ -7,6 +7,7 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.log4j.Logger;
 
 import com.avro.Customer;
 import com.avro.helper.GetConfigValues;
@@ -33,26 +34,27 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class AvroFileOperations {
-	public static ArrayList<ErrorRecord> errorCustomers = new ArrayList<ErrorRecord>();
-	public static String outputReportFileLocation = null;
-	public static String inputConfigFile = null;
-	public static String inputJsonFileLocation = null;
-	public static String inputAvroFileLocation = "customer-output.avro";
+	private static final Logger logger = Logger.getLogger(AvroFileOperations.class);
+	private static ArrayList<ErrorRecord> errorCustomers = new ArrayList<>();
+	private static String outputReportFileLocation = null;
+	private static String inputConfigFile = null;
+	private static String inputJsonFileLocation = null;
+	private static String inputAvroFileLocation = "customer-output.avro";
 	// java -jar avro-jar-with-dependencies.jar customers.json config.properties .
 
 	public static void main(String[] args) {
-		System.out.println("started at " + LocalTime.now());
+		logger.info("started at " + LocalTime.now());
 		long start = System.currentTimeMillis();
 		try {
 			if (ArrayUtils.isNotEmpty(args)) {
 				int length = args.length;
-				System.out.println("Input Params : " + length);
+				logger.info("Input Params : " + length);
 				inputJsonFileLocation = args[0];
 				inputConfigFile = args[1];
 				outputReportFileLocation = args[2];
 
 				for (String input : args) {
-					System.out.println(input);
+					logger.info(input);
 				}
 			} else {
 				inputJsonFileLocation = "src/main/resources/customers.json";
@@ -60,23 +62,22 @@ public class AvroFileOperations {
 				outputReportFileLocation = "src/main/resources/";
 			}
 		} catch (ArrayIndexOutOfBoundsException e) {
-			System.out.println(
+			logger.error(
 					"Need to pass 3 input params like JSON, AVRO file Location & Generate PDF Report Location....");
 			System.exit(0);
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			logger.error(e.getMessage());
 		} finally {
-			System.out.println("3 arguments passed");
+			logger.info("3 arguments passed");
 		}
 
-		ArrayList<Customer> customerList = new ArrayList<Customer>();
+		ArrayList<Customer> customerList = new ArrayList<>();
 		Customer customer = null;
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			// Read the json file and put into object
-			System.out.println(inputJsonFileLocation);
 			CustomerModel obj = mapper.readValue(new File(inputJsonFileLocation), CustomerModel.class);
-			System.out.println("Total Customers : " + obj.getCustomers().size());
+			logger.info("Total Customers : " + obj.getCustomers().size());
 
 			for (CustomerDetails cd : obj.getCustomers()) {
 				// Build a customer
@@ -92,29 +93,29 @@ public class AvroFileOperations {
 				customer = customerBuilder.build();
 				customerList.add(customer);
 			}
-
-			// Write customers into avro file
-			final DatumWriter<Customer> datumWriter = new SpecificDatumWriter<>(Customer.class);
-
-			try (DataFileWriter<Customer> dataFileWriter = new DataFileWriter<>(datumWriter)) {
-				if (null != customer)
-					dataFileWriter.create(customer.getSchema(), new File(inputAvroFileLocation));
-				for (Customer cust : customerList)
-					dataFileWriter.append(cust);
-			} catch (IOException e) {
-				System.out.println(e.getMessage());
-			} finally {
-				System.out.println("successfully wrote customer-output.avro");
-			}
-
 		} catch (JsonParseException e) {
-			System.out.println(e.getMessage());
+			logger.error(e.getMessage());
 		} catch (JsonMappingException e1) {
-			System.out.println(e1.getMessage());
+			logger.error(e1.getMessage());
 		} catch (IOException e2) {
-			System.out.println(e2.getMessage());
+			logger.error(e2.getMessage());
+		} finally {
+			logger.info("successfully read the json file....");
+		}
+
+		// Write customers into avro file
+		final DatumWriter<Customer> datumWriter = new SpecificDatumWriter<>(Customer.class);
+
+		try (DataFileWriter<Customer> dataFileWriter = new DataFileWriter<>(datumWriter)) {
+			if (null != customer)
+				dataFileWriter.create(customer.getSchema(), new File(inputAvroFileLocation));
+			for (Customer cust : customerList)
+				dataFileWriter.append(cust);
+		} catch (IOException e) {
+			logger.error(e.getMessage());
 		} finally {
 			customerList = null;
+			logger.info("successfully wrote customer-output.avro");
 		}
 
 		// We can read our generated avro file
@@ -122,9 +123,9 @@ public class AvroFileOperations {
 		ArrayList<Customer> inValidCustomers = new ArrayList<>();
 		final File fileGeneric = new File(inputAvroFileLocation);
 		final DatumReader<Customer> datumReaderGeneric = new SpecificDatumReader<>(Customer.class);
-		final DataFileReader<Customer> dataFileReaderGeneric;
+
 		try {
-			dataFileReaderGeneric = new DataFileReader<>(fileGeneric, datumReaderGeneric);
+			DataFileReader<Customer> dataFileReaderGeneric = new DataFileReader<>(fileGeneric, datumReaderGeneric);
 			while (dataFileReaderGeneric.hasNext()) {
 				Customer readCustomer = dataFileReaderGeneric.next();
 				if (validateCustomer(readCustomer))
@@ -132,10 +133,11 @@ public class AvroFileOperations {
 				else
 					inValidCustomers.add(readCustomer);
 			}
+			dataFileReaderGeneric.close();
 		} catch (IOException e) {
-			System.out.println(e.getMessage());
-		} finally {
-			System.out.println("successfully read customer-output.avro");
+			logger.error(e.getMessage());
+		} finally {	
+			logger.info("successfully read customer-output.avro");
 		}
 
 		if (!validCustomers.isEmpty())
@@ -143,8 +145,8 @@ public class AvroFileOperations {
 		if (!inValidCustomers.isEmpty())
 			createPdf(inValidCustomers, "InvalidCustomers");
 
-		System.out.println("Report Generated successfully.....");
-		System.out.println("Total Time Taken : " + (System.currentTimeMillis() - start) / 1000 + " secs");
+		logger.info("Report Generated successfully.....");
+		logger.info("Total Time Taken : " + (System.currentTimeMillis() - start) / 1000 + " secs");
 	}
 
 	private static boolean validateCustomer(Customer customer) {
@@ -184,13 +186,13 @@ public class AvroFileOperations {
 			PdfPTable table = null;
 
 			if (fileName.equals("ValidCustomers")) {
-				String tableHeaders[] = { "Id", "First Name", "Last Name", "Age", "AutomatedEmail", "Height",
+				String[] tableHeaders = { "Id", "First Name", "Last Name", "Age", "AutomatedEmail", "Height",
 						"Weight" };
 				table = new PdfPTable(tableHeaders.length);
 				addTableHeader(table, tableHeaders);
 				addRows(table, customers);
 			} else {
-				String tableHeaders[] = { "Id", "Error Reason" };
+				String[] tableHeaders = { "Id", "Error Reason" };
 				table = new PdfPTable(tableHeaders.length);
 				addErrorTableHeader(table, tableHeaders);
 				addErrorRows(table, errorCustomers);
@@ -198,11 +200,11 @@ public class AvroFileOperations {
 			document.add(table);
 			document.close();
 		} catch (Exception e) {
-			System.out.println(e.getMessage());
+			logger.error(e.getMessage());
 		}
 	}
 
-	private static void addTableHeader(PdfPTable table, String tableHeaders[]) {
+	private static void addTableHeader(PdfPTable table, String[] tableHeaders) {
 		Stream.of(tableHeaders).forEach(columnTitle -> {
 			PdfPCell header = new PdfPCell();
 			header.setBackgroundColor(BaseColor.LIGHT_GRAY);
@@ -225,7 +227,7 @@ public class AvroFileOperations {
 
 	// executable jar inputs 3 params avro file, config file and output pdf files
 	// zip file
-	private static void addErrorTableHeader(PdfPTable table, String tableHeaders[]) {
+	private static void addErrorTableHeader(PdfPTable table, String[] tableHeaders) {
 		Stream.of(tableHeaders).forEach(columnTitle -> {
 			PdfPCell header = new PdfPCell();
 			header.setBackgroundColor(BaseColor.LIGHT_GRAY);

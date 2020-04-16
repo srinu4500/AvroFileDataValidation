@@ -3,14 +3,17 @@ package com.avro.service;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalTime;
+
+import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class JsonFileCreator {
-
+	
+	private static final Logger logger = Logger.getLogger(JsonFileCreator.class);
 	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
-		System.out.println("creating json started"+LocalTime.now());
+		logger.info("creating json started"+LocalTime.now());
 		long start = System.currentTimeMillis();
 
 		//Add customers to list
@@ -27,11 +30,12 @@ public class JsonFileCreator {
 				customerDetails.put("lastName", "LastUser"+i);
 			else
 				customerDetails.put("lastName", "LN"+i);
-	        customerDetails.put("age", (int)(Math.random() * ((100 - 1) + 1)) + 1);
-	        if(i%2 == 0)
+			if(i%2 == 0)
 	        	customerDetails.put("automatedEmail", true);
 	        else 
 	        	customerDetails.put("automatedEmail", false);
+	        customerDetails.put("age", (int)(Math.random() * ((100 - 1) + 1)) + 1);
+	        
 	        customerDetails.put("height", 175.5);
 	        customerDetails.put("weight", 50.5);
 	        customers.add(customerDetails);
@@ -45,13 +49,11 @@ public class JsonFileCreator {
  
             file.write(customerList.toJSONString());
             file.flush();
-            System.out.println("file created successfully"+LocalTime.now());
+            logger.info("file created successfully"+LocalTime.now());
  
         } catch (IOException e) {
-            System.out.println(e.getMessage());
+            logger.error(e.getMessage());
         }
-        System.out.println("Total Time Taken : "+(System.currentTimeMillis() - start)/1000 + " secs");
+        logger.info("Total Time Taken : "+(System.currentTimeMillis() - start)/1000 + " secs");
 	}
-	
-
 }
