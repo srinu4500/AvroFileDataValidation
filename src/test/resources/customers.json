@@ -1,0 +1,6 @@
+{"customers":[
+	{"firstName":"TestUser12345","lastName":"LN1","automatedEmail":false,"weight":50.5,"id":1,"age":35,"height":175.5},
+	{"firstName":"Test2","lastName":"LN2","automatedEmail":true,"weight":50.5,"id":2,"age":22,"height":175.5},
+	{"firstName":"Test3","lastName":"LastName3456","automatedEmail":false,"weight":50.5,"id":3,"age":19,"height":175.5}
+	]
+}

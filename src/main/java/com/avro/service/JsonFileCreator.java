@@ -2,22 +2,57 @@ package com.avro.service;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.LocalTime;
+import java.util.Random;
 
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
+import com.avro.exception.InvalidNumberOfArgumentsException;
+import com.avro.exception.MyCustomException;
+
 public class JsonFileCreator {
 	
 	private static final Logger logger = Logger.getLogger(JsonFileCreator.class);
-	@SuppressWarnings("unchecked")
-	public static void main(String[] args) {
+	
+	public static void main(String[] args) throws InvalidNumberOfArgumentsException, MyCustomException, NoSuchAlgorithmException {
+		String fileName = null;
 		logger.info("creating json started"+LocalTime.now());
 		long start = System.currentTimeMillis();
+		if(args == null)
+			throw new InvalidNumberOfArgumentsException("Need to pass Json file name");
+		else if(args.length > 1)
+			throw new InvalidNumberOfArgumentsException("Need to pass only fileName");
+		else {
+			fileName = args[0];
+			JSONObject customerList = getDataObjectList();
+			createJsonFile(fileName, customerList);
+		}
+        
+        logger.info("Total Time Taken : "+(System.currentTimeMillis() - start)/1000 + " secs");
+	}
 
-		//Add customers to list
-        JSONArray customers = new JSONArray();
+	private static void createJsonFile(String fileName, JSONObject customerList) throws MyCustomException {
+		//Write JSON file
+        try (FileWriter file = new FileWriter(fileName)) {
+ 
+            file.write(customerList.toJSONString());
+            file.flush();
+            logger.info("file created successfully"+LocalTime.now());
+ 
+        } catch (IOException e) {
+            logger.error(e.getMessage());
+            throw new MyCustomException("IOException");
+        }
+	}
+
+	@SuppressWarnings("unchecked")
+	private static JSONObject getDataObjectList() throws NoSuchAlgorithmException {
+		Random random = SecureRandom.getInstanceStrong();
+		JSONArray customers = new JSONArray();
 		for(int i=1; i<= 25; i++) {
 		
 			JSONObject customerDetails = new JSONObject();
@@ -30,12 +65,9 @@ public class JsonFileCreator {
 				customerDetails.put("lastName", "LastUser"+i);
 			else
 				customerDetails.put("lastName", "LN"+i);
-			if(i%2 == 0)
-	        	customerDetails.put("automatedEmail", true);
-	        else 
-	        	customerDetails.put("automatedEmail", false);
-	        customerDetails.put("age", (int)(Math.random() * ((100 - 1) + 1)) + 1);
-	        
+	        customerDetails.put("automatedEmail", (i%2 == 0)? true : false);
+	        int age = random.nextInt(100);
+	        customerDetails.put("age", age);	        
 	        customerDetails.put("height", 175.5);
 	        customerDetails.put("weight", 50.5);
 	        customers.add(customerDetails);
@@ -43,17 +75,6 @@ public class JsonFileCreator {
         JSONObject customerList = new JSONObject(); 
      
         customerList.put("customers", customers);
-        
-        //Write JSON file
-        try (FileWriter file = new FileWriter("customers.json")) {
- 
-            file.write(customerList.toJSONString());
-            file.flush();
-            logger.info("file created successfully"+LocalTime.now());
- 
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-        }
-        logger.info("Total Time Taken : "+(System.currentTimeMillis() - start)/1000 + " secs");
+		return customerList;
 	}
 }

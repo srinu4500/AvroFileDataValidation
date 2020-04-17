@@ -1,16 +1,17 @@
 package com.avro.model;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CustomerModel {
 
-	private ArrayList<CustomerDetails> customers = new ArrayList<>();
+	private List<CustomerDetails> customers = new ArrayList<>();
 
-	public ArrayList<CustomerDetails> getCustomers() {
+	public List<CustomerDetails> getCustomers() {
 		return customers;
 	}
 
-	public void setCustomers(ArrayList<CustomerDetails> customers) {
+	public void setCustomers(List<CustomerDetails> customers) {
 		this.customers = customers;
 	}
 
